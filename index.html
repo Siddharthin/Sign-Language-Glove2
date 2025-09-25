@@ -1,0 +1,3274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignLink Pro - Real-Time Gesture Recognition System</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 30px 0;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .header h1 {
+            font-size: 3.2rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #64ffda, #00bcd4, #2196f3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.8;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            background: rgba(255,255,255,0.08);
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 20px;
+            border-radius: 15px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.15);
+            transition: all 0.3s ease;
+        }
+
+        .status-item:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-2px);
+        }
+
+        .status-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ff4757;
+            animation: pulse 2s infinite;
+            flex-shrink: 0;
+        }
+
+        .status-indicator.connected {
+            background: #2ed573;
+        }
+
+        .status-indicator.processing {
+            background: #ffa502;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .status-text {
+            font-weight: 600;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+        }
+
+        .status-value {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-left: auto;
+            font-weight: 500;
+        }
+
+        /* Main Grid Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .secondary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .panel {
+            background: rgba(255,255,255,0.08);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .panel:hover {
+            background: rgba(255,255,255,0.12);
+            transform: translateY(-5px);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+        }
+
+        .panel h2 {
+            color: #f1f5f9;
+            margin-bottom: 25px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            border-bottom: 2px solid rgba(100, 255, 218, 0.3);
+            padding-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Gesture Recognition Panel */
+        .gesture-display {
+            text-align: center;
+            padding: 35px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .gesture-text {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #64ffda;
+            margin-bottom: 20px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(100, 255, 218, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(100, 255, 218, 0.2);
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .gesture-confidence {
+            font-size: 1.3rem;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .gesture-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 15px 0;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #64ffda, #00bcd4);
+            border-radius: 8px;
+            transition: width 0.5s ease;
+            width: 0%;
+            box-shadow: 0 0 20px rgba(100, 255, 218, 0.5);
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .chart-small {
+            height: 200px;
+        }
+
+        /* Sensor Grids */
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sensor-item {
+            background: rgba(255,255,255,0.08);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .sensor-item:hover {
+            background: rgba(255,255,255,0.12);
+            transform: translateY(-3px);
+        }
+
+        .sensor-label {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sensor-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #64ffda;
+            text-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+        }
+
+        .sensor-unit {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        /* Flex Sensors Visual */
+        .flex-visual {
+            display: flex;
+            justify-content: space-around;
+            align-items: end;
+            padding: 25px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            margin-bottom: 25px;
+            min-height: 220px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .flex-finger {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flex-bar-container {
+            width: 35px;
+            height: 160px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: end;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .flex-bar {
+            width: 100%;
+            background: linear-gradient(to top, #ff6b6b, #feca57, #48dbfb, #0abde3);
+            border-radius: 20px;
+            transition: height 0.4s ease;
+            height: 0%;
+            min-height: 4px;
+            box-shadow: 0 0 20px rgba(72, 219, 251, 0.4);
+        }
+
+        .flex-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #cbd5e1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .flex-value {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #64ffda;
+            background: rgba(100, 255, 218, 0.1);
+            padding: 6px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            min-width: 40px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Map */
+        #map {
+            height: 350px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Controls */
+        .control-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .control-section h3 {
+            color: #f1f5f9;
+            margin-bottom: 18px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+            color: white;
+            box-shadow: 0 8px 32px rgba(0, 210, 255, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            box-shadow: 0 8px 32px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #feca57, #ff9ff3);
+            color: white;
+            box-shadow: 0 8px 32px rgba(254, 202, 87, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Connection Panel */
+        .connection-panel {
+            background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+            border: 2px solid #51cf66;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .connection-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 10px;
+        }
+
+        .connection-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .url-input {
+            width: 250px;
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-right: 10px;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            z-index: 10000;
+            animation: slideInRight 0.3s ease-out;
+            max-width: 350px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+
+        .notification.info {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+        }
+
+        .notification.warning {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Data Logging */
+        .log-panel {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+
+        .log-timestamp {
+            color: #a0aec0;
+            margin-right: 10px;
+        }
+
+        .log-level-info {
+            color: #63b3ed;
+        }
+
+        .log-level-success {
+            color: #68d391;
+        }
+
+        .log-level-error {
+            color: #fc8181;
+        }
+
+        .log-level-warning {
+            color: #f6e05e;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .status-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .secondary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .control-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .flex-visual {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .url-input {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .connection-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+        }
+
+        /* Login Page Styles */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: none;
+        }
+
+        .login-header p {
+            color: #6c757d;
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .login-btn {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .login-footer p {
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Page -->
+        <div id="loginPage" class="login-container">
+            <div class="login-box">
+                <div class="login-header">
+                    <h1>👋 SignLink Pro</h1>
+                    <p>Real-Time Gesture Recognition & IoT Integration System</p>
+                </div>
+                
+                <form class="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required placeholder="Enter your username">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required placeholder="Enter your password">
+                    </div>
+                    
+                    <button type="submit" class="login-btn">
+                        🔐 Sign In
+                    </button>
+                    
+                    <div class="login-footer">
+                        <p>Demo Credentials: admin / admin123</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Application (Hidden by default) -->
+        <div id="mainApp" style="display: none;">
+            <!-- Header -->
+            <div class="header">
+                <h1>👋 SignLink Pro</h1>
+                <p>Real-Time Gesture Recognition & IoT Integration System</p>
+                <button class="logout-btn" onclick="handleLogout()">🚪 Logout</button>
+            </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator" id="esp32Status"></div>
+                <span class="status-text">ESP32 Device</span>
+                <span class="status-value" id="esp32StatusText">Disconnected</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator" id="rpiStatus"></div>
+                <span class="status-text">Raspberry Pi AI</span>
+                <span class="status-value" id="rpiStatusText">Disconnected</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator" id="gestureStatus"></div>
+                <span class="status-text">Gesture Recognition</span>
+                <span class="status-value" id="gestureStatusText">Idle</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator" id="ttsStatus"></div>
+                <span class="status-text">Text-to-Speech</span>
+                <span class="status-value" id="ttsStatusText">Ready</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator" id="dataStatus"></div>
+                <span class="status-text">Data Logging</span>
+                <span class="status-value" id="dataStatusText">Stopped</span>
+            </div>
+            <div class="status-item">
+                <span class="status-text">System Time</span>
+                <span class="status-value" id="systemTime">--:--:--</span>
+            </div>
+        </div>
+
+        <!-- Connection Panel -->
+        <div class="panel connection-panel">
+            <h2>🔗 System Connections</h2>
+            
+            <div class="connection-item">
+                <div class="connection-info">
+                    <div class="status-indicator" id="esp32ConnIndicator"></div>
+                    <strong>ESP32 WebSocket:</strong>
+                    <input type="text" class="url-input" id="esp32Url" placeholder="ws://192.168.1.6:81" value="ws://192.168.1.6:81">
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="toggleESP32Connection()" id="esp32ConnBtn">
+                        🔗 Connect ESP32
+                    </button>
+                    <button class="btn btn-success" onclick="testESP32()">🧪 Test</button>
+                </div>
+            </div>
+
+            <div class="connection-item">
+                <div class="connection-info">
+                    <div class="status-indicator" id="rpiConnIndicator"></div>
+                    <strong>Raspberry Pi WebSocket:</strong>
+                    <input type="text" class="url-input" id="rpiUrl" placeholder="ws://192.168.1.101:8765" value="ws://192.168.1.101:8765">
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="toggleRPiConnection()" id="rpiConnBtn">
+                        🔗 Connect RPi
+                    </button>
+                    <button class="btn btn-success" onclick="testRPi()">🧪 Test</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Gesture Recognition Panel -->
+            <div class="panel">
+                <h2>🤖 Real-Time Gesture Recognition</h2>
+                
+                <div class="gesture-display">
+                    <div class="gesture-text" id="gestureText">Waiting for gesture...</div>
+                    <div class="gesture-confidence" id="gestureConfidence">Confidence: 0%</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill"></div>
+                    </div>
+                    <div class="gesture-status">
+                        <span id="gestureTimestamp">Last prediction: Never</span>
+                        <span id="spokenStatus">🔇 Not spoken</span>
+                    </div>
+                </div>
+
+                <div class="sensor-grid">
+                    <div class="sensor-item">
+                        <div class="sensor-label">Total Predictions</div>
+                        <div class="sensor-value" id="totalPredictions">0</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Accuracy Rate</div>
+                        <div class="sensor-value" id="accuracyRate">0%</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Processing Time</div>
+                        <div class="sensor-value" id="processingTime">0ms</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Model Status</div>
+                        <div class="sensor-value" id="modelStatus">Ready</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Sensor Charts -->
+            <div class="panel">
+                <h2>📊 Live Sensor Data</h2>
+                
+                <div class="chart-container chart-small">
+                    <canvas id="flexChart"></canvas>
+                </div>
+                
+                <div class="chart-container chart-small">
+                    <canvas id="imuChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Grid -->
+        <div class="secondary-grid">
+            <!-- Flex Sensors Panel -->
+            <div class="panel">
+                <h2>🤏 Flex Sensors</h2>
+                
+                <div class="flex-visual">
+                    <div class="flex-finger">
+                        <div class="flex-label">Index</div>
+                        <div class="flex-bar-container">
+                            <div class="flex-bar" id="flexBar1"></div>
+                        </div>
+                        <div class="flex-value" id="flexVal1">0</div>
+                    </div>
+                    <div class="flex-finger">
+                        <div class="flex-label">Middle</div>
+                        <div class="flex-bar-container">
+                            <div class="flex-bar" id="flexBar2"></div>
+                        </div>
+                        <div class="flex-value" id="flexVal2">0</div>
+                    </div>
+                    <div class="flex-finger">
+                        <div class="flex-label">Ring</div>
+                        <div class="flex-bar-container">
+                            <div class="flex-bar" id="flexBar3"></div>
+                        </div>
+                        <div class="flex-value" id="flexVal3">0</div>
+                    </div>
+                    <div class="flex-finger">
+                        <div class="flex-label">Pinky</div>
+                        <div class="flex-bar-container">
+                            <div class="flex-bar" id="flexBar4"></div>
+                        </div>
+                        <div class="flex-value" id="flexVal4">0</div>
+                    </div>
+                </div>
+
+                <div class="sensor-grid">
+                    <div class="sensor-item">
+                        <div class="sensor-label">Flex 1 (Index)</div>
+                        <div class="sensor-value" id="flex1Value">0</div>
+                        <div class="sensor-unit">ADC Units</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Flex 2 (Middle)</div>
+                        <div class="sensor-value" id="flex2Value">0</div>
+                        <div class="sensor-unit">ADC Units</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Flex 3 (Ring)</div>
+                        <div class="sensor-value" id="flex3Value">0</div>
+                        <div class="sensor-unit">ADC Units</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Flex 4 (Pinky)</div>
+                        <div class="sensor-value" id="flex4Value">0</div>
+                        <div class="sensor-unit">ADC Units</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MPU6050 IMU Panel -->
+            <div class="panel">
+                <h2>🎯 MPU6050 IMU Sensor</h2>
+                
+                <div class="sensor-grid">
+                    <div class="sensor-item">
+                        <div class="sensor-label">Accel X</div>
+                        <div class="sensor-value" id="accelX">0.00</div>
+                        <div class="sensor-unit">g</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Accel Y</div>
+                        <div class="sensor-value" id="accelY">0.00</div>
+                        <div class="sensor-unit">g</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Accel Z</div>
+                        <div class="sensor-value" id="accelZ">0.00</div>
+                        <div class="sensor-unit">g</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Gyro X</div>
+                        <div class="sensor-value" id="gyroX">0.0</div>
+                        <div class="sensor-unit">°/s</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Gyro Y</div>
+                        <div class="sensor-value" id="gyroY">0.0</div>
+                        <div class="sensor-unit">°/s</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Gyro Z</div>
+                        <div class="sensor-value" id="gyroZ">0.0</div>
+                        <div class="sensor-unit">°/s</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Pitch</div>
+                        <div class="sensor-value" id="pitch">0.0</div>
+                        <div class="sensor-unit">degrees</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Roll</div>
+                        <div class="sensor-value" id="roll">0.0</div>
+                        <div class="sensor-unit">degrees</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GPS Location Panel -->
+            <div class="panel">
+                <h2>📍 GPS Location Tracking</h2>
+                
+                <div id="map"></div>
+                
+                <div class="sensor-grid" style="margin-top: 15px;">
+                    <div class="sensor-item">
+                        <div class="sensor-label">Latitude</div>
+                        <div class="sensor-value" id="latitude">0.000000</div>
+                        <div class="sensor-unit">degrees</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Longitude</div>
+                        <div class="sensor-value" id="longitude">0.000000</div>
+                        <div class="sensor-unit">degrees</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">GPS Fix</div>
+                        <div class="sensor-value" id="gpsFix">No Fix</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Satellites</div>
+                        <div class="sensor-value" id="satellites">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="panel">
+            <h2>🎮 System Controls</h2>
+            
+            <!-- ESP32 Controls -->
+            <div class="control-section">
+                <h3>📡 ESP32 Device Controls</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-danger" onclick="toggleBuzzer()" id="buzzerBtn">
+                        🔊 Toggle Buzzer
+                    </button>
+                    <button class="btn btn-primary" onclick="requestSensorData()">
+                        📊 Request Data
+                    </button>
+                    <button class="btn btn-success" onclick="calibrateSensors()">
+                        ⚖️ Calibrate Sensors
+                    </button>
+                    <button class="btn btn-warning" onclick="resetESP32()">
+                        🔄 Reset ESP32
+                    </button>
+                </div>
+            </div>
+
+            <!-- AI Controls -->
+            <div class="control-section">
+                <h3>🧠 AI & Machine Learning Controls</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-success" onclick="startGestureRecognition()" id="gestureBtn">
+                        🤖 Start Recognition
+                    </button>
+                    <button class="btn btn-warning" onclick="retrainModel()">
+                        🎯 Retrain Model
+                    </button>
+                    <button class="btn btn-primary" onclick="saveDataset()">
+                        💾 Save Dataset
+                    </button>
+                    <button class="btn btn-danger" onclick="clearDataset()">
+                        🗑️ Clear Dataset
+                    </button>
+                </div>
+            </div>
+
+            <!-- TTS Controls -->
+            <div class="control-section">
+                <h3>🗣️ Text-to-Speech Controls</h3>
+                <div class="control-buttons">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="ttsToggle" onchange="toggleTTS()" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="margin-left: 10px; margin-right: 20px;">TTS Enabled</span>
+                    
+                    <button class="btn btn-primary" onclick="testTTS()">
+                        🎵 Test TTS
+                    </button>
+                    <button class="btn btn-success" onclick="adjustVolume()">
+                        🔊 Adjust Volume
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Logging Controls -->
+            <div class="control-section">
+                <h3>📝 Data Logging & Export</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-success" onclick="startDataLogging()" id="loggingBtn">
+                        📊 Start Logging
+                    </button>
+                    <button class="btn btn-primary" onclick="exportData()">
+                        📤 Export CSV
+                    </button>
+                    <button class="btn btn-warning" onclick="exportJSON()">
+                        📋 Export JSON
+                    </button>
+                    <button class="btn btn-danger" onclick="clearLogs()">
+                        🗑️ Clear Logs
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ESP32 Code Panel -->
+        <div class="panel">
+            <h2>💻 ESP32 Arduino Code</h2>
+            <p style="margin-bottom: 15px; color: #6c757d;">Complete ESP32 code for sensor data collection and WebSocket communication:</p>
+            
+            <div class="control-buttons" style="margin-bottom: 15px;">
+                <button class="btn btn-primary" onclick="copyCode('arduino')">📋 Copy Arduino Code</button>
+                <button class="btn btn-success" onclick="downloadCode('arduino')">💾 Download .ino File</button>
+            </div>
+            
+            <div class="log-panel" style="max-height: 400px; font-size: 0.8rem;" id="arduinoCode">
+#include &lt;WiFi.h&gt;
+#include &lt;WebSocketsServer.h&gt;
+#include &lt;ArduinoJson.h&gt;
+#include &lt;Wire.h&gt;
+#include &lt;MPU6050.h&gt;
+#include &lt;SoftwareSerial.h&gt;
+
+// WiFi credentials
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+// WebSocket server
+WebSocketsServer webSocket = WebSocketsServer(81);
+
+// MPU6050 sensor
+MPU6050 mpu;
+bool mpuConnected = false;
+
+// GPS module (using SoftwareSerial)
+SoftwareSerial gpsSerial(16, 17); // RX, TX pins
+bool gpsConnected = false;
+
+// Flex sensors (analog pins)
+const int flexPins[4] = {A0, A1, A2, A3};
+bool flexConnected = false;
+
+// Buzzer pin
+const int buzzerPin = 2;
+bool buzzerState = false;
+
+// Data collection - Optimized for faster transmission
+unsigned long lastSensorRead = 0;
+const unsigned long sensorInterval = 50; // 50ms = 20Hz for faster updates
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Initialize pins
+  pinMode(buzzerPin, OUTPUT);
+  digitalWrite(buzzerPin, LOW);
+  
+  // Initialize I2C for MPU6050
+  Wire.begin();
+  
+  // Try to initialize MPU6050
+  mpu.initialize();
+  mpuConnected = mpu.testConnection();
+  if (mpuConnected) {
+    Serial.println("MPU6050 connected successfully");
+  } else {
+    Serial.println("MPU6050 connection failed");
+  }
+  
+  // Initialize GPS
+  gpsSerial.begin(9600);
+  gpsConnected = true; // Assume GPS is connected, will validate with data
+  
+  // Test flex sensors
+  testFlexSensors();
+  
+  // Connect to WiFi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  
+  Serial.println("WiFi connected!");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+  
+  // Start WebSocket server
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+  
+  Serial.println("WebSocket server started on port 81");
+}
+
+void loop() {
+  webSocket.loop();
+  
+  // Read sensors at regular intervals
+  if (millis() - lastSensorRead >= sensorInterval) {
+    sendSensorData();
+    lastSensorRead = millis();
+  }
+  
+  // Reduced delay for faster response
+  delay(1);
+}
+
+void testFlexSensors() {
+  // Test if flex sensors are connected by reading values
+  int validReadings = 0;
+  for (int i = 0; i < 4; i++) {
+    int reading = analogRead(flexPins[i]);
+    if (reading > 10 && reading < 4090) { // Valid range
+      validReadings++;
+    }
+  }
+  flexConnected = (validReadings >= 2); // At least 2 sensors connected
+  
+  if (flexConnected) {
+    Serial.println("Flex sensors detected");
+  } else {
+    Serial.println("No flex sensors detected");
+  }
+}
+
+void sendSensorData() {
+  // Use smaller JSON buffer for faster processing
+  DynamicJsonDocument doc(512);
+  
+  // MPU6050 data - only send if connected
+  if (mpuConnected) {
+    JsonObject mpuObj = doc.createNestedObject("mpu6050");
+    int16_t ax, ay, az, gx, gy, gz;
+    mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+    
+    // Convert to g and degrees/second with reduced precision for speed
+    mpuObj["connected"] = true;
+    mpuObj["accel_x"] = round((ax / 16384.0) * 100) / 100.0; // 2 decimal places
+    mpuObj["accel_y"] = round((ay / 16384.0) * 100) / 100.0;
+    mpuObj["accel_z"] = round((az / 16384.0) * 100) / 100.0;
+    mpuObj["gyro_x"] = round((gx / 131.0) * 10) / 10.0; // 1 decimal place
+    mpuObj["gyro_y"] = round((gy / 131.0) * 10) / 10.0;
+    mpuObj["gyro_z"] = round((gz / 131.0) * 10) / 10.0;
+    
+    // Calculate pitch and roll with reduced precision
+    float accel_x = ax / 16384.0;
+    float accel_y = ay / 16384.0;
+    float accel_z = az / 16384.0;
+    mpuObj["pitch"] = round(atan2(accel_y, sqrt(accel_x * accel_x + accel_z * accel_z)) * 180 / PI * 10) / 10.0;
+    mpuObj["roll"] = round(atan2(-accel_x, accel_z) * 180 / PI * 10) / 10.0;
+  }
+  
+  // Flex sensor data - only send if connected
+  if (flexConnected) {
+    JsonObject flexObj = doc.createNestedObject("flex");
+    flexObj["connected"] = true;
+    flexObj["avg1"] = analogRead(flexPins[0]);
+    flexObj["avg2"] = analogRead(flexPins[1]);
+    flexObj["avg3"] = analogRead(flexPins[2]);
+    flexObj["avg4"] = analogRead(flexPins[3]);
+  }
+  
+  // Skip GPS for now to reduce packet size and improve speed
+  // GPS can be added back if needed with separate transmission
+  
+  // Send JSON data with minimal serialization
+  String jsonString;
+  serializeJson(doc, jsonString);
+  webSocket.broadcastTXT(jsonString);
+}
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+  switch(type) {
+    case WStype_DISCONNECTED:
+      Serial.printf("[%u] Disconnected!\n", num);
+      break;
+      
+    case WStype_CONNECTED: {
+      IPAddress ip = webSocket.remoteIP(num);
+      Serial.printf("[%u] Connected from %d.%d.%d.%d\n", num, ip[0], ip[1], ip[2], ip[3]);
+      break;
+    }
+    
+    case WStype_TEXT: {
+      String message = String((char*)payload);
+      Serial.printf("[%u] Received: %s\n", num, message.c_str());
+      
+      // Handle commands
+      if (message == "BUZZER_ON") {
+        digitalWrite(buzzerPin, HIGH);
+        buzzerState = true;
+        webSocket.sendTXT(num, "Buzzer ON");
+      }
+      else if (message == "BUZZER_OFF") {
+        digitalWrite(buzzerPin, LOW);
+        buzzerState = false;
+        webSocket.sendTXT(num, "Buzzer OFF");
+      }
+      else if (message == "REQUEST_DATA") {
+        sendSensorData();
+      }
+      else if (message == "CALIBRATE") {
+        // Calibrate sensors
+        if (mpuConnected) {
+          mpu.setXAccelOffset(0);
+          mpu.setYAccelOffset(0);
+          mpu.setZAccelOffset(0);
+        }
+        webSocket.sendTXT(num, "Calibration complete");
+      }
+      else if (message == "RESET") {
+        webSocket.sendTXT(num, "Resetting ESP32...");
+        delay(1000);
+        ESP.restart();
+      }
+      else if (message == "STATUS") {
+        DynamicJsonDocument statusDoc(512);
+        statusDoc["mpu6050"] = mpuConnected;
+        statusDoc["flex"] = flexConnected;
+        statusDoc["gps"] = gpsConnected;
+        statusDoc["buzzer"] = buzzerState;
+        statusDoc["wifi_rssi"] = WiFi.RSSI();
+        statusDoc["free_heap"] = ESP.getFreeHeap();
+        
+        String statusString;
+        serializeJson(statusDoc, statusString);
+        webSocket.sendTXT(num, statusString);
+      }
+      break;
+    }
+    
+    default:
+      break;
+  }
+}
+            </div>
+        </div>
+
+        <!-- Python Script Panel -->
+        <div class="panel">
+            <h2>🐍 Raspberry Pi Python Script</h2>
+            <p style="margin-bottom: 15px; color: #6c757d;">Complete Python script for AI gesture recognition and WebSocket server:</p>
+            
+            <div class="control-buttons" style="margin-bottom: 15px;">
+                <button class="btn btn-primary" onclick="copyCode('python')">📋 Copy Python Code</button>
+                <button class="btn btn-success" onclick="downloadCode('python')">💾 Download .py File</button>
+            </div>
+            
+            <div class="log-panel" style="max-height: 400px; font-size: 0.8rem;" id="pythonCode">
+#!/usr/bin/env python3
+"""
+SignLink Pro - Raspberry Pi AI Gesture Recognition Server
+Real-time gesture recognition using machine learning
+"""
+
+import asyncio
+import websockets
+import json
+import numpy as np
+import pickle
+import logging
+from datetime import datetime
+import pyttsx3
+import threading
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
+import warnings
+warnings.filterwarnings('ignore')
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class GestureRecognitionServer:
+    def __init__(self):
+        self.clients = set()
+        self.model = None
+        self.scaler = StandardScaler()
+        self.is_training = False
+        self.is_recognizing = False
+        self.tts_enabled = True
+        self.data_logging = False
+        
+        # Initialize TTS
+        self.tts_engine = pyttsx3.init()
+        self.tts_engine.setProperty('rate', 150)
+        self.tts_engine.setProperty('volume', 0.8)
+        
+        # Gesture classes
+        self.gesture_classes = [
+            'Hello', 'Thank You', 'Please', 'Sorry', 'Yes', 'No',
+            'Help', 'Stop', 'Good', 'Bad', 'More', 'Less'
+        ]
+        
+        # Data storage
+        self.sensor_data_buffer = []
+        self.training_data = []
+        self.training_labels = []
+        
+        # Statistics
+        self.total_predictions = 0
+        self.correct_predictions = 0
+        
+        # Load existing model if available
+        self.load_model()
+        
+        logger.info("Gesture Recognition Server initialized")
+    
+    def load_model(self):
+        """Load pre-trained model and scaler"""
+        try:
+            with open('gesture_model.pkl', 'rb') as f:
+                self.model = pickle.load(f)
+            with open('gesture_scaler.pkl', 'rb') as f:
+                self.scaler = pickle.load(f)
+            logger.info("Pre-trained model loaded successfully")
+        except FileNotFoundError:
+            logger.info("No pre-trained model found. Training new model...")
+            self.train_initial_model()
+    
+    def save_model(self):
+        """Save trained model and scaler"""
+        try:
+            with open('gesture_model.pkl', 'wb') as f:
+                pickle.dump(self.model, f)
+            with open('gesture_scaler.pkl', 'wb') as f:
+                pickle.dump(self.scaler, f)
+            logger.info("Model saved successfully")
+        except Exception as e:
+            logger.error(f"Error saving model: {e}")
+    
+    def train_initial_model(self):
+        """Train initial model with synthetic data"""
+        try:
+            # Generate synthetic training data for demonstration
+            np.random.seed(42)
+            n_samples = 1000
+            n_features = 12  # 4 flex + 6 IMU + 2 orientation
+            
+            X = np.random.randn(n_samples, n_features)
+            y = np.random.choice(self.gesture_classes, n_samples)
+            
+            # Add some pattern to make gestures distinguishable
+            for i, gesture in enumerate(self.gesture_classes):
+                mask = y == gesture
+                X[mask] += np.random.randn(np.sum(mask), n_features) * 0.5 + i * 0.3
+            
+            # Train model
+            X_scaled = self.scaler.fit_transform(X)
+            self.model = RandomForestClassifier(n_estimators=100, random_state=42)
+            self.model.fit(X_scaled, y)
+            
+            self.save_model()
+            logger.info("Initial model trained with synthetic data")
+            
+        except Exception as e:
+            logger.error(f"Error training initial model: {e}")
+    
+    def extract_features(self, sensor_data):
+        """Extract features from sensor data"""
+        try:
+            features = []
+            
+            # Flex sensor features (4 values)
+            if 'flex' in sensor_data and sensor_data['flex'].get('connected'):
+                flex_data = [
+                    sensor_data['flex'].get('avg1', 0),
+                    sensor_data['flex'].get('avg2', 0),
+                    sensor_data['flex'].get('avg3', 0),
+                    sensor_data['flex'].get('avg4', 0)
+                ]
+                features.extend(flex_data)
+            else:
+                features.extend([0, 0, 0, 0])
+            
+            # IMU features (6 values)
+            if 'mpu6050' in sensor_data and sensor_data['mpu6050'].get('connected'):
+                imu_data = [
+                    sensor_data['mpu6050'].get('accel_x', 0),
+                    sensor_data['mpu6050'].get('accel_y', 0),
+                    sensor_data['mpu6050'].get('accel_z', 0),
+                    sensor_data['mpu6050'].get('gyro_x', 0),
+                    sensor_data['mpu6050'].get('gyro_y', 0),
+                    sensor_data['mpu6050'].get('gyro_z', 0)
+                ]
+                features.extend(imu_data)
+            else:
+                features.extend([0, 0, 0, 0, 0, 0])
+            
+            # Orientation features (2 values)
+            if 'mpu6050' in sensor_data and sensor_data['mpu6050'].get('connected'):
+                orientation_data = [
+                    sensor_data['mpu6050'].get('pitch', 0),
+                    sensor_data['mpu6050'].get('roll', 0)
+                ]
+                features.extend(orientation_data)
+            else:
+                features.extend([0, 0])
+            
+            return np.array(features).reshape(1, -1)
+            
+        except Exception as e:
+            logger.error(f"Error extracting features: {e}")
+            return np.zeros((1, 12))
+    
+    def predict_gesture(self, sensor_data):
+        """Predict gesture from sensor data"""
+        try:
+            if not self.model or not self.is_recognizing:
+                return None, 0.0
+            
+            # Extract features
+            features = self.extract_features(sensor_data)
+            
+            # Scale features
+            features_scaled = self.scaler.transform(features)
+            
+            # Predict
+            prediction = self.model.predict(features_scaled)[0]
+            probabilities = self.model.predict_proba(features_scaled)[0]
+            confidence = np.max(probabilities)
+            
+            self.total_predictions += 1
+            
+            return prediction, confidence
+            
+        except Exception as e:
+            logger.error(f"Error predicting gesture: {e}")
+            return None, 0.0
+    
+    def speak_gesture(self, gesture):
+        """Convert gesture to speech"""
+        if not self.tts_enabled:
+            return False
+        
+        try:
+            def speak():
+                self.tts_engine.say(gesture)
+                self.tts_engine.runAndWait()
+            
+            # Run TTS in separate thread to avoid blocking
+            tts_thread = threading.Thread(target=speak)
+            tts_thread.daemon = True
+            tts_thread.start()
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"TTS error: {e}")
+            return False
+    
+    async def handle_client(self, websocket, path):
+        """Handle WebSocket client connection"""
+        self.clients.add(websocket)
+        client_ip = websocket.remote_address[0]
+        logger.info(f"Client connected: {client_ip}")
+        
+        try:
+            await self.send_status_update(websocket)
+            
+            async for message in websocket:
+                try:
+                    data = json.loads(message)
+                    await self.process_message(websocket, data)
+                except json.JSONDecodeError:
+                    logger.error(f"Invalid JSON received: {message}")
+                except Exception as e:
+                    logger.error(f"Error processing message: {e}")
+                    
+        except websockets.exceptions.ConnectionClosed:
+            logger.info(f"Client disconnected: {client_ip}")
+        except Exception as e:
+            logger.error(f"Client handler error: {e}")
+        finally:
+            self.clients.discard(websocket)
+    
+    async def process_message(self, websocket, data):
+        """Process incoming WebSocket message"""
+        try:
+            message_type = data.get('type', '')
+            
+            if message_type == 'sensor_data':
+                await self.handle_sensor_data(data)
+            elif message_type == 'start_recognition':
+                self.is_recognizing = True
+                await self.send_response(websocket, "Gesture recognition started", True)
+            elif message_type == 'stop_recognition':
+                self.is_recognizing = False
+                await self.send_response(websocket, "Gesture recognition stopped", True)
+            elif message_type == 'toggle_tts':
+                self.tts_enabled = not self.tts_enabled
+                await self.send_response(websocket, f"TTS {'enabled' if self.tts_enabled else 'disabled'}", True)
+            elif message_type == 'retrain_model':
+                await self.retrain_model(websocket)
+            elif message_type == 'get_status':
+                await self.send_status_update(websocket)
+            elif message_type == 'start_logging':
+                self.data_logging = True
+                await self.send_response(websocket, "Data logging started", True)
+            elif message_type == 'stop_logging':
+                self.data_logging = False
+                await self.send_response(websocket, "Data logging stopped", True)
+            else:
+                logger.warning(f"Unknown message type: {message_type}")
+                
+        except Exception as e:
+            logger.error(f"Error processing message: {e}")
+            await self.send_response(websocket, f"Error: {e}", False)
+    
+    async def handle_sensor_data(self, data):
+        """Handle incoming sensor data"""
+        try:
+            # Store data if logging is enabled
+            if self.data_logging:
+                self.sensor_data_buffer.append({
+                    'timestamp': datetime.now().isoformat(),
+                    'data': data
+                })
+            
+            # Predict gesture if recognition is active
+            if self.is_recognizing:
+                gesture, confidence = self.predict_gesture(data)
+                
+                if gesture and confidence > 0.6:  # Confidence threshold
+                    spoken = self.speak_gesture(gesture)
+                    
+                    # Send prediction to all clients
+                    prediction_data = {
+                        'type': 'gesture_prediction',
+                        'gesture': gesture,
+                        'confidence': confidence,
+                        'spoken': spoken,
+                        'timestamp': datetime.now().isoformat()
+                    }
+                    
+                    await self.broadcast_to_clients(prediction_data)
+                    
+        except Exception as e:
+            logger.error(f"Error handling sensor data: {e}")
+    
+    async def retrain_model(self, websocket):
+        """Retrain the machine learning model"""
+        try:
+            if self.is_training:
+                await self.send_response(websocket, "Model is already training", False)
+                return
+            
+            self.is_training = True
+            await self.send_response(websocket, "Model retraining started...", True)
+            
+            # Simulate training process (replace with actual training logic)
+            await asyncio.sleep(2)  # Simulate training time
+            
+            # Here you would implement actual model retraining
+            # using collected sensor data and labels
+            
+            self.is_training = False
+            await self.send_response(websocket, "Model retraining completed", True)
+            
+        except Exception as e:
+            logger.error(f"Error retraining model: {e}")
+            self.is_training = False
+            await self.send_response(websocket, f"Retraining failed: {e}", False)
+    
+    async def send_status_update(self, websocket):
+        """Send system status update"""
+        try:
+            accuracy_rate = (self.correct_predictions / max(self.total_predictions, 1)) * 100
+            
+            status_data = {
+                'type': 'status_update',
+                'gesture_recognition': {
+                    'active': self.is_recognizing,
+                    'total_predictions': self.total_predictions,
+                    'accuracy_rate': round(accuracy_rate, 1),
+                    'model_loaded': self.model is not None
+                },
+                'tts': {
+                    'enabled': self.tts_enabled
+                },
+                'system': {
+                    'data_logging': self.data_logging,
+                    'training': self.is_training,
+                    'connected_clients': len(self.clients)
+                }
+            }
+            
+            await websocket.send(json.dumps(status_data))
+            
+        except Exception as e:
+            logger.error(f"Error sending status update: {e}")
+    
+    async def send_response(self, websocket, message, success):
+        """Send command response"""
+        try:
+            response_data = {
+                'type': 'command_response',
+                'message': message,
+                'success': success,
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            await websocket.send(json.dumps(response_data))
+            
+        except Exception as e:
+            logger.error(f"Error sending response: {e}")
+    
+    async def broadcast_to_clients(self, data):
+        """Broadcast data to all connected clients"""
+        if not self.clients:
+            return
+        
+        message = json.dumps(data)
+        disconnected_clients = set()
+        
+        for client in self.clients:
+            try:
+                await client.send(message)
+            except websockets.exceptions.ConnectionClosed:
+                disconnected_clients.add(client)
+            except Exception as e:
+                logger.error(f"Error broadcasting to client: {e}")
+                disconnected_clients.add(client)
+        
+        # Remove disconnected clients
+        self.clients -= disconnected_clients
+    
+    async def start_server(self, host='0.0.0.0', port=8765):
+        """Start the WebSocket server"""
+        logger.info(f"Starting WebSocket server on {host}:{port}")
+        
+        try:
+            async with websockets.serve(self.handle_client, host, port):
+                logger.info("Gesture Recognition Server is running...")
+                await asyncio.Future()  # Run forever
+                
+        except Exception as e:
+            logger.error(f"Server error: {e}")
+
+def main():
+    """Main function"""
+    try:
+        server = GestureRecognitionServer()
+        asyncio.run(server.start_server())
+    except KeyboardInterrupt:
+        logger.info("Server stopped by user")
+    except Exception as e:
+        logger.error(f"Main error: {e}")
+
+if __name__ == "__main__":
+    main()
+            </div>
+        </div>
+
+        <!-- System Logs Panel -->
+        <div class="panel">
+            <h2>📋 System Logs & Activity</h2>
+            <div class="control-buttons" style="margin-bottom: 15px;">
+                <button class="btn btn-primary" onclick="clearSystemLogs()">🧹 Clear Logs</button>
+                <button class="btn btn-success" onclick="exportLogs()">📤 Export Logs</button>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="autoScrollToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+                <span style="margin-left: 10px;">Auto-scroll</span>
+            </div>
+            <div class="log-panel" id="systemLogs">
+                <div class="log-entry">
+                    <span class="log-timestamp">[00:00:00]</span>
+                    <span class="log-level-info">INFO</span>
+                    <span>System initialized. Waiting for connections...</span>
+                </div>
+            </div>
+        </div>
+        </div> <!-- End of mainApp -->
+    </div>
+
+    <script>
+        // Global Variables
+        let esp32WebSocket = null;
+        let rpiWebSocket = null;
+        let map = null;
+        let marker = null;
+        let flexChart = null;
+        let imuChart = null;
+
+        // System State
+        let systemState = {
+            esp32Connected: false,
+            rpiConnected: false,
+            gestureRecognition: false,
+            ttsEnabled: true,
+            dataLogging: false,
+            buzzerActive: false,
+            totalPredictions: 0,
+            accuracyRate: 0,
+            lastGesture: null,
+            lastConfidence: 0
+        };
+
+        // Data Buffers for Charts
+        let sensorDataBuffer = {
+            flex: { labels: [], data1: [], data2: [], data3: [], data4: [] },
+            imu: { labels: [], accelX: [], accelY: [], accelZ: [], gyroX: [], gyroY: [], gyroZ: [] }
+        };
+
+        // Connection timeout handlers
+        let esp32ConnectionTimeout = null;
+        let rpiConnectionTimeout = null;
+
+        // Login Management
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Demo authentication (replace with real authentication in production)
+            if (username === 'admin' && password === 'admin123') {
+                // Hide login page and show main app
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                
+                // Initialize the application
+                initializeApplication();
+                
+                showNotification('Welcome to SignLink Pro!', 'success');
+                addSystemLog('User logged in successfully', 'success');
+            } else {
+                showNotification('Invalid credentials. Try admin/admin123', 'error');
+                addSystemLog('Failed login attempt', 'warning');
+            }
+        }
+
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Disconnect all connections
+                disconnectESP32();
+                disconnectRPi();
+                
+                // Hide main app and show login page
+                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('loginPage').style.display = 'block';
+                
+                // Clear form
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                
+                showNotification('Logged out successfully', 'info');
+            }
+        }
+
+        // Initialize Application
+        function initializeApplication() {
+            console.log('SignLink Pro initializing...');
+            
+            try {
+                initializeMap();
+                initializeCharts();
+                updateSystemTime();
+                setInterval(updateSystemTime, 1000);
+                
+                // Load saved URLs
+                loadSavedUrls();
+                
+                // Add system log
+                addSystemLog('System initialized successfully', 'info');
+                
+                console.log('SignLink Pro ready!');
+            } catch (error) {
+                console.error('Initialization error:', error);
+                addSystemLog('Initialization error: ' + error.message, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is already logged in (optional)
+            // For demo purposes, always show login page first
+            console.log('SignLink Pro loaded. Please login to continue.');
+        });
+
+        // Initialize Leaflet Map with error handling
+        function initializeMap() {
+            try {
+                map = L.map('map').setView([20.5937, 78.9629], 6);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+                
+                marker = L.marker([20.5937, 78.9629]).addTo(map)
+                    .bindPopup('Waiting for GPS data...')
+                    .openPopup();
+                    
+                console.log('Map initialized successfully');
+            } catch (error) {
+                console.error('Map initialization error:', error);
+                addSystemLog('Map initialization failed: ' + error.message, 'error');
+            }
+        }
+
+        // Initialize Charts with comprehensive error handling
+        function initializeCharts() {
+            try {
+                // Flex Sensors Chart
+                const flexCtx = document.getElementById('flexChart');
+                if (!flexCtx) {
+                    throw new Error('Flex chart canvas not found');
+                }
+                
+                flexChart = new Chart(flexCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            { label: 'Index', data: [], borderColor: '#e74c3c', fill: false },
+                            { label: 'Middle', data: [], borderColor: '#f39c12', fill: false },
+                            { label: 'Ring', data: [], borderColor: '#f1c40f', fill: false },
+                            { label: 'Pinky', data: [], borderColor: '#2ecc71', fill: false }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { title: { display: true, text: 'Flex Sensors (Real-time)' } },
+                        scales: {
+                            x: { display: false },
+                            y: { beginAtZero: true, max: 4095 }
+                        },
+                        animation: { duration: 0 }
+                    }
+                });
+
+                // IMU Chart
+                const imuCtx = document.getElementById('imuChart');
+                if (!imuCtx) {
+                    throw new Error('IMU chart canvas not found');
+                }
+                
+                imuChart = new Chart(imuCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            { label: 'Accel X', data: [], borderColor: '#3498db', fill: false },
+                            { label: 'Accel Y', data: [], borderColor: '#9b59b6', fill: false },
+                            { label: 'Accel Z', data: [], borderColor: '#e67e22', fill: false },
+                            { label: 'Gyro X', data: [], borderColor: '#1abc9c', fill: false, hidden: true },
+                            { label: 'Gyro Y', data: [], borderColor: '#34495e', fill: false, hidden: true },
+                            { label: 'Gyro Z', data: [], borderColor: '#e74c3c', fill: false, hidden: true }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { title: { display: true, text: 'IMU Sensors (Real-time)' } },
+                        scales: {
+                            x: { display: false },
+                            y: { beginAtZero: false }
+                        },
+                        animation: { duration: 0 }
+                    }
+                });
+                
+                console.log('Charts initialized successfully');
+            } catch (error) {
+                console.error('Chart initialization error:', error);
+                addSystemLog('Chart initialization failed: ' + error.message, 'error');
+            }
+        }
+
+        // ESP32 Connection Management
+        function toggleESP32Connection() {
+            try {
+                if (esp32WebSocket && esp32WebSocket.readyState === WebSocket.OPEN) {
+                    disconnectESP32();
+                } else {
+                    connectESP32();
+                }
+            } catch (error) {
+                console.error('ESP32 toggle error:', error);
+                addSystemLog('ESP32 toggle error: ' + error.message, 'error');
+            }
+        }
+
+        function connectESP32() {
+            const url = document.getElementById('esp32Url')?.value?.trim();
+            const button = document.getElementById('esp32ConnBtn');
+            
+            if (!url) {
+                showNotification('Please enter ESP32 WebSocket URL', 'error');
+                return;
+            }
+            
+            if (!button) {
+                console.error('ESP32 connection button not found');
+                return;
+            }
+            
+            button.disabled = true;
+            button.innerHTML = '🔄 Connecting... <div class="loading-spinner"></div>';
+            
+            try {
+                if (esp32ConnectionTimeout) {
+                    clearTimeout(esp32ConnectionTimeout);
+                }
+                
+                esp32WebSocket = new WebSocket(url);
+                
+                esp32ConnectionTimeout = setTimeout(() => {
+                    if (esp32WebSocket && esp32WebSocket.readyState === WebSocket.CONNECTING) {
+                        esp32WebSocket.close();
+                        resetESP32Button();
+                        showNotification('ESP32 connection timeout', 'error');
+                        addSystemLog('ESP32 connection timeout', 'error');
+                    }
+                }, 10000);
+                
+                esp32WebSocket.onopen = function() {
+                    clearTimeout(esp32ConnectionTimeout);
+                    systemState.esp32Connected = true;
+                    updateConnectionStatus('esp32Status', true);
+                    updateConnectionStatus('esp32ConnIndicator', true);
+                    
+                    const statusText = document.getElementById('esp32StatusText');
+                    if (statusText) statusText.textContent = 'Connected';
+                    
+                    button.innerHTML = '❌ Disconnect ESP32';
+                    button.disabled = false;
+                    button.className = 'btn btn-danger';
+                    
+                    showNotification('ESP32 connected successfully!', 'success');
+                    addSystemLog('ESP32 WebSocket connected', 'success');
+                    
+                    localStorage.setItem('esp32_url', url);
+                };
+                
+                esp32WebSocket.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleESP32Data(data);
+                    } catch (e) {
+                        console.log('Non-JSON ESP32 message:', event.data);
+                    }
+                };
+                
+                esp32WebSocket.onclose = function() {
+                    systemState.esp32Connected = false;
+                    updateConnectionStatus('esp32Status', false);
+                    updateConnectionStatus('esp32ConnIndicator', false);
+                    
+                    const statusText = document.getElementById('esp32StatusText');
+                    if (statusText) statusText.textContent = 'Disconnected';
+                    
+                    resetESP32Button();
+                    
+                    showNotification('ESP32 disconnected', 'info');
+                    addSystemLog('ESP32 WebSocket disconnected', 'warning');
+                };
+                
+                esp32WebSocket.onerror = function(error) {
+                    console.error('ESP32 WebSocket error:', error);
+                    resetESP32Button();
+                    
+                    showNotification('Failed to connect to ESP32', 'error');
+                    addSystemLog('ESP32 connection failed', 'error');
+                };
+                
+            } catch (error) {
+                resetESP32Button();
+                showNotification('ESP32 connection error: ' + error.message, 'error');
+                addSystemLog('ESP32 error: ' + error.message, 'error');
+            }
+        }
+
+        function resetESP32Button() {
+            const button = document.getElementById('esp32ConnBtn');
+            if (button) {
+                button.innerHTML = '🔗 Connect ESP32';
+                button.disabled = false;
+                button.className = 'btn btn-primary';
+            }
+        }
+
+        function disconnectESP32() {
+            try {
+                if (esp32WebSocket) {
+                    esp32WebSocket.close();
+                    esp32WebSocket = null;
+                }
+                
+                if (esp32ConnectionTimeout) {
+                    clearTimeout(esp32ConnectionTimeout);
+                    esp32ConnectionTimeout = null;
+                }
+            } catch (error) {
+                console.error('ESP32 disconnect error:', error);
+                addSystemLog('ESP32 disconnect error: ' + error.message, 'error');
+            }
+        }
+
+        // Raspberry Pi Connection Management
+        function toggleRPiConnection() {
+            try {
+                if (rpiWebSocket && rpiWebSocket.readyState === WebSocket.OPEN) {
+                    disconnectRPi();
+                } else {
+                    connectRPi();
+                }
+            } catch (error) {
+                console.error('RPi toggle error:', error);
+                addSystemLog('RPi toggle error: ' + error.message, 'error');
+            }
+        }
+
+        function connectRPi() {
+            const url = document.getElementById('rpiUrl')?.value?.trim();
+            const button = document.getElementById('rpiConnBtn');
+            
+            if (!url) {
+                showNotification('Please enter Raspberry Pi WebSocket URL', 'error');
+                return;
+            }
+            
+            if (!button) {
+                console.error('RPi connection button not found');
+                return;
+            }
+            
+            button.disabled = true;
+            button.innerHTML = '🔄 Connecting... <div class="loading-spinner"></div>';
+            
+            try {
+                if (rpiConnectionTimeout) {
+                    clearTimeout(rpiConnectionTimeout);
+                }
+                
+                rpiWebSocket = new WebSocket(url);
+                
+                rpiConnectionTimeout = setTimeout(() => {
+                    if (rpiWebSocket && rpiWebSocket.readyState === WebSocket.CONNECTING) {
+                        rpiWebSocket.close();
+                        resetRPiButton();
+                        showNotification('RPi connection timeout', 'error');
+                        addSystemLog('RPi connection timeout', 'error');
+                    }
+                }, 10000);
+                
+                rpiWebSocket.onopen = function() {
+                    clearTimeout(rpiConnectionTimeout);
+                    systemState.rpiConnected = true;
+                    updateConnectionStatus('rpiStatus', true);
+                    updateConnectionStatus('rpiConnIndicator', true);
+                    
+                    const statusText = document.getElementById('rpiStatusText');
+                    if (statusText) statusText.textContent = 'Connected';
+                    
+                    button.innerHTML = '❌ Disconnect RPi';
+                    button.disabled = false;
+                    button.className = 'btn btn-danger';
+                    
+                    showNotification('Raspberry Pi connected successfully!', 'success');
+                    addSystemLog('Raspberry Pi WebSocket connected', 'success');
+                    
+                    try {
+                        rpiWebSocket.send(JSON.stringify({ type: 'get_status' }));
+                    } catch (e) {
+                        console.error('Failed to send status request:', e);
+                    }
+                    
+                    localStorage.setItem('rpi_url', url);
+                };
+                
+                rpiWebSocket.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleRPiData(data);
+                    } catch (e) {
+                        console.log('Non-JSON RPi message:', event.data);
+                    }
+                };
+                
+                rpiWebSocket.onclose = function() {
+                    systemState.rpiConnected = false;
+                    updateConnectionStatus('rpiStatus', false);
+                    updateConnectionStatus('rpiConnIndicator', false);
+                    
+                    const statusText = document.getElementById('rpiStatusText');
+                    if (statusText) statusText.textContent = 'Disconnected';
+                    
+                    resetRPiButton();
+                    
+                    showNotification('Raspberry Pi disconnected', 'info');
+                    addSystemLog('Raspberry Pi WebSocket disconnected', 'warning');
+                };
+                
+                rpiWebSocket.onerror = function(error) {
+                    console.error('RPi WebSocket error:', error);
+                    resetRPiButton();
+                    
+                    showNotification('Failed to connect to Raspberry Pi', 'error');
+                    addSystemLog('Raspberry Pi connection failed', 'error');
+                };
+                
+            } catch (error) {
+                resetRPiButton();
+                showNotification('RPi connection error: ' + error.message, 'error');
+                addSystemLog('RPi error: ' + error.message, 'error');
+            }
+        }
+
+        function resetRPiButton() {
+            const button = document.getElementById('rpiConnBtn');
+            if (button) {
+                button.innerHTML = '🔗 Connect RPi';
+                button.disabled = false;
+                button.className = 'btn btn-primary';
+            }
+        }
+
+        function disconnectRPi() {
+            try {
+                if (rpiWebSocket) {
+                    rpiWebSocket.close();
+                    rpiWebSocket = null;
+                }
+                
+                if (rpiConnectionTimeout) {
+                    clearTimeout(rpiConnectionTimeout);
+                    rpiConnectionTimeout = null;
+                }
+            } catch (error) {
+                console.error('RPi disconnect error:', error);
+                addSystemLog('RPi disconnect error: ' + error.message, 'error');
+            }
+        }
+
+        // Handle ESP32 Data - Optimized for speed
+        function handleESP32Data(data) {
+            if (!data || typeof data !== 'object') {
+                return;
+            }
+            
+            try {
+                // Batch all DOM updates to minimize reflows
+                requestAnimationFrame(() => {
+                    // Update GPS data
+                    if (data.gps && typeof data.gps === 'object') {
+                        updateGPSData(data.gps);
+                    }
+                    
+                    // Update MPU6050 data - check for any MPU data presence
+                    if (data.mpu6050 && typeof data.mpu6050 === 'object') {
+                        updateMPUData(data.mpu6050);
+                    }
+                    
+                    // Update flex sensor data
+                    if (data.flex && typeof data.flex === 'object') {
+                        updateFlexData(data.flex);
+                    }
+                    
+                    // Update charts with throttling
+                    updateChartsThrottled(data);
+                });
+            } catch (error) {
+                console.error('Error handling ESP32 data:', error);
+            }
+        }
+
+        // Handle Raspberry Pi Data
+        function handleRPiData(data) {
+            if (!data || typeof data !== 'object') {
+                console.warn('Invalid RPi data received:', data);
+                return;
+            }
+            
+            try {
+                if (data.type === 'status_update') {
+                    updateSystemStatus(data);
+                } else if (data.gesture) {
+                    updateGestureDisplay(data);
+                } else if (data.type === 'command_response') {
+                    handleCommandResponse(data);
+                }
+                
+                addSystemLog('AI data received from Raspberry Pi', 'info');
+            } catch (error) {
+                console.error('Error handling RPi data:', error);
+                addSystemLog('Error processing RPi data: ' + error.message, 'error');
+            }
+        }
+
+        // Update GPS Display
+        function updateGPSData(gpsData) {
+            try {
+                // Check if GPS is actually connected and has valid data
+                if (gpsData && gpsData.connected === true && gpsData.fix && 
+                    gpsData.latitude !== undefined && gpsData.longitude !== undefined &&
+                    gpsData.latitude !== 0 && gpsData.longitude !== 0) {
+                    
+                    // GPS is connected and has valid data
+                    safeUpdateElement('latitude', (gpsData.latitude || 0).toFixed(6));
+                    safeUpdateElement('longitude', (gpsData.longitude || 0).toFixed(6));
+                    safeUpdateElement('gpsFix', gpsData.fix ? 'Fixed' : 'No Fix');
+                    safeUpdateElement('satellites', gpsData.satellites || 0);
+                    
+                    const lat = parseFloat(gpsData.latitude);
+                    const lng = parseFloat(gpsData.longitude);
+                    
+                    if (marker && !isNaN(lat) && !isNaN(lng)) {
+                        marker.setLatLng([lat, lng]);
+                        marker.setPopupContent(`
+                            <b>GPS Location</b><br>
+                            Lat: ${lat.toFixed(6)}<br>
+                            Lng: ${lng.toFixed(6)}<br>
+                            Satellites: ${gpsData.satellites}<br>
+                            <small>Last update: ${new Date().toLocaleTimeString()}</small>
+                        `);
+                    }
+                    
+                    if (map && !isNaN(lat) && !isNaN(lng)) {
+                        map.setView([lat, lng], 15);
+                    }
+                } else {
+                    // GPS is not connected or no valid data
+                    safeUpdateElement('latitude', 'GPS Not Connected');
+                    safeUpdateElement('longitude', 'GPS Not Connected');
+                    safeUpdateElement('gpsFix', 'No GPS Module');
+                    safeUpdateElement('satellites', 'N/A');
+                    
+                    if (marker) {
+                        marker.setPopupContent(`
+                            <b>GPS Status</b><br>
+                            Status: GPS module not connected<br>
+                            <i>Connect GPS module to ESP32 to see real location</i><br>
+                            <small>GPS RX → GPIO16, GPS TX → GPIO17</small>
+                        `);
+                    }
+                }
+            } catch (error) {
+                console.error('GPS data update error:', error);
+                addSystemLog('GPS update error: ' + error.message, 'error');
+            }
+        }
+
+        // Update MPU6050 Display
+        function updateMPUData(mpuData) {
+            try {
+                console.log('Updating MPU data:', mpuData); // Debug log
+                
+                // Check if MPU6050 has any sensor data (more flexible validation)
+                if (mpuData && (mpuData.connected === true || 
+                    mpuData.accel_x !== undefined || mpuData.accel_y !== undefined || 
+                    mpuData.accel_z !== undefined || mpuData.gyro_x !== undefined)) {
+                    
+                    console.log('MPU6050 data is valid, updating display'); // Debug log
+                    
+                    // MPU6050 is connected and has valid data
+                    safeUpdateElement('accelX', (mpuData.accel_x || 0).toFixed(2));
+                    safeUpdateElement('accelY', (mpuData.accel_y || 0).toFixed(2));
+                    safeUpdateElement('accelZ', (mpuData.accel_z || 0).toFixed(2));
+                    safeUpdateElement('gyroX', (mpuData.gyro_x || 0).toFixed(1));
+                    safeUpdateElement('gyroY', (mpuData.gyro_y || 0).toFixed(1));
+                    safeUpdateElement('gyroZ', (mpuData.gyro_z || 0).toFixed(1));
+                    safeUpdateElement('pitch', (mpuData.pitch || 0).toFixed(1));
+                    safeUpdateElement('roll', (mpuData.roll || 0).toFixed(1));
+                    
+                    console.log('MPU6050 display updated successfully'); // Debug log
+                } else {
+                    console.log('MPU6050 not connected or no valid data'); // Debug log
+                    
+                    // MPU6050 is not connected or no valid data
+                    safeUpdateElement('accelX', 'No MPU6050');
+                    safeUpdateElement('accelY', 'No MPU6050');
+                    safeUpdateElement('accelZ', 'No MPU6050');
+                    safeUpdateElement('gyroX', 'No MPU6050');
+                    safeUpdateElement('gyroY', 'No MPU6050');
+                    safeUpdateElement('gyroZ', 'No MPU6050');
+                    safeUpdateElement('pitch', 'No MPU6050');
+                    safeUpdateElement('roll', 'No MPU6050');
+                }
+            } catch (error) {
+                console.error('MPU data update error:', error);
+                addSystemLog('MPU update error: ' + error.message, 'error');
+            }
+        }
+
+        // Update Flex Sensor Display
+        function updateFlexData(flexData) {
+            try {
+                // Check if flex sensors are actually connected and sending data
+                if (flexData && flexData.connected === true && 
+                    (flexData.avg1 !== undefined || flexData.avg2 !== undefined || 
+                     flexData.avg3 !== undefined || flexData.avg4 !== undefined)) {
+                    
+                    // Flex sensors are connected and have valid data
+                    safeUpdateElement('flex1Value', flexData.avg1 || 0);
+                    safeUpdateElement('flex2Value', flexData.avg2 || 0);
+                    safeUpdateElement('flex3Value', flexData.avg3 || 0);
+                    safeUpdateElement('flex4Value', flexData.avg4 || 0);
+                    
+                    const maxValue = 4095;
+                    updateFlexBar('flexBar1', 'flexVal1', flexData.avg1 || 0, maxValue);
+                    updateFlexBar('flexBar2', 'flexVal2', flexData.avg2 || 0, maxValue);
+                    updateFlexBar('flexBar3', 'flexVal3', flexData.avg3 || 0, maxValue);
+                    updateFlexBar('flexBar4', 'flexVal4', flexData.avg4 || 0, maxValue);
+                } else {
+                    // Flex sensors are not connected or no valid data
+                    safeUpdateElement('flex1Value', 'Not Connected');
+                    safeUpdateElement('flex2Value', 'Not Connected');
+                    safeUpdateElement('flex3Value', 'Not Connected');
+                    safeUpdateElement('flex4Value', 'Not Connected');
+                    
+                    // Reset flex bars to 0
+                    updateFlexBar('flexBar1', 'flexVal1', 0, 4095);
+                    updateFlexBar('flexBar2', 'flexVal2', 0, 4095);
+                    updateFlexBar('flexBar3', 'flexVal3', 0, 4095);
+                    updateFlexBar('flexBar4', 'flexVal4', 0, 4095);
+                    
+                    // Update visual values to show disconnected state
+                    safeUpdateElement('flexVal1', 'N/A');
+                    safeUpdateElement('flexVal2', 'N/A');
+                    safeUpdateElement('flexVal3', 'N/A');
+                    safeUpdateElement('flexVal4', 'N/A');
+                }
+            } catch (error) {
+                console.error('Flex data update error:', error);
+                addSystemLog('Flex update error: ' + error.message, 'error');
+            }
+        }
+
+        function updateFlexBar(barId, valueId, value, maxValue) {
+            try {
+                const bar = document.getElementById(barId);
+                const valueElement = document.getElementById(valueId);
+                
+                if (bar && valueElement && !isNaN(value) && !isNaN(maxValue) && maxValue > 0) {
+                    const percentage = Math.max(0, Math.min(100, (value / maxValue) * 100));
+                    bar.style.height = percentage + '%';
+                    valueElement.textContent = Math.round(value);
+                }
+            } catch (error) {
+                console.error('Flex bar update error:', error);
+            }
+        }
+
+        // Chart update throttling
+        let lastChartUpdate = 0;
+        const chartUpdateInterval = 100; // Update charts every 100ms max
+
+        // Throttled chart updates for better performance
+        function updateChartsThrottled(data) {
+            const now = Date.now();
+            if (now - lastChartUpdate < chartUpdateInterval) {
+                return; // Skip update if too frequent
+            }
+            lastChartUpdate = now;
+            
+            updateCharts(data);
+        }
+
+        // Update Charts - Optimized
+        function updateCharts(data) {
+            if (!data) return;
+            
+            try {
+                const timestamp = Date.now(); // Use timestamp for better performance
+                const maxPoints = 30; // Reduced for better performance
+                
+                // Only update flex chart if flex sensors are connected and have valid data
+                if (data.flex && data.flex.connected === true && flexChart) {
+                    sensorDataBuffer.flex.labels.push(timestamp);
+                    sensorDataBuffer.flex.data1.push(data.flex.avg1 || 0);
+                    sensorDataBuffer.flex.data2.push(data.flex.avg2 || 0);
+                    sensorDataBuffer.flex.data3.push(data.flex.avg3 || 0);
+                    sensorDataBuffer.flex.data4.push(data.flex.avg4 || 0);
+                    
+                    // Trim arrays efficiently
+                    if (sensorDataBuffer.flex.labels.length > maxPoints) {
+                        const excess = sensorDataBuffer.flex.labels.length - maxPoints;
+                        sensorDataBuffer.flex.labels.splice(0, excess);
+                        sensorDataBuffer.flex.data1.splice(0, excess);
+                        sensorDataBuffer.flex.data2.splice(0, excess);
+                        sensorDataBuffer.flex.data3.splice(0, excess);
+                        sensorDataBuffer.flex.data4.splice(0, excess);
+                    }
+                    
+                    // Update chart data directly
+                    flexChart.data.labels = sensorDataBuffer.flex.labels;
+                    flexChart.data.datasets[0].data = sensorDataBuffer.flex.data1;
+                    flexChart.data.datasets[1].data = sensorDataBuffer.flex.data2;
+                    flexChart.data.datasets[2].data = sensorDataBuffer.flex.data3;
+                    flexChart.data.datasets[3].data = sensorDataBuffer.flex.data4;
+                    flexChart.update('none');
+                }
+                
+                // Update IMU chart if MPU6050 has any valid data
+                if (data.mpu6050 && (data.mpu6050.connected === true || 
+                    data.mpu6050.accel_x !== undefined) && imuChart) {
+                    sensorDataBuffer.imu.labels.push(timestamp);
+                    sensorDataBuffer.imu.accelX.push(data.mpu6050.accel_x || 0);
+                    sensorDataBuffer.imu.accelY.push(data.mpu6050.accel_y || 0);
+                    sensorDataBuffer.imu.accelZ.push(data.mpu6050.accel_z || 0);
+                    sensorDataBuffer.imu.gyroX.push(data.mpu6050.gyro_x || 0);
+                    sensorDataBuffer.imu.gyroY.push(data.mpu6050.gyro_y || 0);
+                    sensorDataBuffer.imu.gyroZ.push(data.mpu6050.gyro_z || 0);
+                    
+                    // Trim arrays efficiently
+                    if (sensorDataBuffer.imu.labels.length > maxPoints) {
+                        const excess = sensorDataBuffer.imu.labels.length - maxPoints;
+                        sensorDataBuffer.imu.labels.splice(0, excess);
+                        sensorDataBuffer.imu.accelX.splice(0, excess);
+                        sensorDataBuffer.imu.accelY.splice(0, excess);
+                        sensorDataBuffer.imu.accelZ.splice(0, excess);
+                        sensorDataBuffer.imu.gyroX.splice(0, excess);
+                        sensorDataBuffer.imu.gyroY.splice(0, excess);
+                        sensorDataBuffer.imu.gyroZ.splice(0, excess);
+                    }
+                    
+                    // Update chart data directly
+                    imuChart.data.labels = sensorDataBuffer.imu.labels;
+                    imuChart.data.datasets[0].data = sensorDataBuffer.imu.accelX;
+                    imuChart.data.datasets[1].data = sensorDataBuffer.imu.accelY;
+                    imuChart.data.datasets[2].data = sensorDataBuffer.imu.accelZ;
+                    imuChart.data.datasets[3].data = sensorDataBuffer.imu.gyroX;
+                    imuChart.data.datasets[4].data = sensorDataBuffer.imu.gyroY;
+                    imuChart.data.datasets[5].data = sensorDataBuffer.imu.gyroZ;
+                    imuChart.update('none');
+                }
+            } catch (error) {
+                console.error('Error updating charts:', error);
+            }
+        }
+
+        // Update Gesture Display
+        function updateGestureDisplay(data) {
+            if (!data || typeof data.gesture === 'undefined') {
+                console.warn('Invalid gesture data received:', data);
+                return;
+            }
+            
+            try {
+                const gestureText = document.getElementById('gestureText');
+                const gestureConfidence = document.getElementById('gestureConfidence');
+                const confidenceFill = document.getElementById('confidenceFill');
+                const gestureTimestamp = document.getElementById('gestureTimestamp');
+                const spokenStatus = document.getElementById('spokenStatus');
+                
+                if (!gestureText || !gestureConfidence || !confidenceFill || !gestureTimestamp || !spokenStatus) {
+                    console.error('Gesture display elements not found');
+                    return;
+                }
+                
+                gestureText.textContent = data.gesture || 'Unknown';
+                const confidence = Math.max(0, Math.min(1, data.confidence || 0));
+                gestureText.style.background = confidence > 0.7 ? 
+                    'linear-gradient(135deg, #51cf66, #40c057)' : 
+                    'linear-gradient(135deg, #f8f9fa, #e9ecef)';
+                gestureText.style.color = confidence > 0.7 ? 'white' : '#2c3e50';
+                
+                const confidencePercent = Math.round(confidence * 100);
+                gestureConfidence.textContent = `Confidence: ${confidencePercent}%`;
+                confidenceFill.style.width = confidencePercent + '%';
+                
+                gestureTimestamp.textContent = 'Last prediction: ' + new Date().toLocaleTimeString();
+                
+                spokenStatus.textContent = data.spoken ? '🔊 Spoken' : '🔇 Not spoken';
+                spokenStatus.style.color = data.spoken ? '#2ecc71' : '#6c757d';
+                
+                systemState.lastGesture = data.gesture;
+                systemState.lastConfidence = confidence;
+                systemState.totalPredictions++;
+                
+                safeUpdateElement('totalPredictions', systemState.totalPredictions);
+                safeUpdateElement('processingTime', '~50ms');
+                
+                updateConnectionStatus('gestureStatus', true);
+                safeUpdateElement('gestureStatusText', 'Active');
+                
+                if (data.spoken) {
+                    updateConnectionStatus('ttsStatus', true);
+                    safeUpdateElement('ttsStatusText', 'Speaking');
+                    
+                    setTimeout(() => {
+                        safeUpdateElement('ttsStatusText', 'Ready');
+                    }, 2000);
+                }
+                
+                addSystemLog('Gesture predicted: ' + data.gesture + ' (' + confidencePercent + '%)', 'success');
+            } catch (error) {
+                console.error('Error updating gesture display:', error);
+                addSystemLog('Gesture display error: ' + error.message, 'error');
+            }
+        }
+
+        // Safe element update function
+        function safeUpdateElement(elementId, value) {
+            try {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.textContent = value;
+                }
+            } catch (error) {
+                console.error('Error updating element ' + elementId + ':', error);
+            }
+        }
+
+        // Control Functions
+        function toggleBuzzer() {
+            try {
+                if (!esp32WebSocket || esp32WebSocket.readyState !== WebSocket.OPEN) {
+                    showNotification('ESP32 not connected', 'error');
+                    return;
+                }
+                
+                const button = document.getElementById('buzzerBtn');
+                const command = systemState.buzzerActive ? 'BUZZER_OFF' : 'BUZZER_ON';
+                
+                esp32WebSocket.send(command);
+                systemState.buzzerActive = !systemState.buzzerActive;
+                
+                if (button) {
+                    button.textContent = systemState.buzzerActive ? '🔇 Stop Buzzer' : '🔊 Start Buzzer';
+                    button.className = systemState.buzzerActive ? 'btn btn-danger' : 'btn btn-success';
+                }
+                
+                showNotification('Buzzer ' + (systemState.buzzerActive ? 'ON' : 'OFF'), 'success');
+                addSystemLog('Buzzer ' + (systemState.buzzerActive ? 'activated' : 'deactivated'), 'info');
+            } catch (error) {
+                console.error('Buzzer toggle error:', error);
+                addSystemLog('Buzzer error: ' + error.message, 'error');
+            }
+        }
+
+        function requestSensorData() {
+            try {
+                if (!esp32WebSocket || esp32WebSocket.readyState !== WebSocket.OPEN) {
+                    showNotification('ESP32 not connected', 'error');
+                    return;
+                }
+                
+                esp32WebSocket.send('REQUEST_DATA');
+                showNotification('Sensor data requested', 'info');
+                addSystemLog('Manual sensor data request sent', 'info');
+            } catch (error) {
+                console.error('Sensor data request error:', error);
+                addSystemLog('Sensor data request error: ' + error.message, 'error');
+            }
+        }
+
+        function calibrateSensors() {
+            try {
+                if (!esp32WebSocket || esp32WebSocket.readyState !== WebSocket.OPEN) {
+                    showNotification('ESP32 not connected', 'error');
+                    return;
+                }
+                
+                esp32WebSocket.send('CALIBRATE');
+                showNotification('Sensor calibration started', 'info');
+                addSystemLog('Sensor calibration initiated', 'info');
+            } catch (error) {
+                console.error('Calibration error:', error);
+                addSystemLog('Calibration error: ' + error.message, 'error');
+            }
+        }
+
+        function resetESP32() {
+            try {
+                if (!esp32WebSocket || esp32WebSocket.readyState !== WebSocket.OPEN) {
+                    showNotification('ESP32 not connected', 'error');
+                    return;
+                }
+                
+                if (confirm('Are you sure you want to reset the ESP32? This will restart the device.')) {
+                    esp32WebSocket.send('RESET');
+                    showNotification('ESP32 reset command sent', 'warning');
+                    addSystemLog('ESP32 reset command sent', 'warning');
+                    
+                    setTimeout(() => {
+                        disconnectESP32();
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('Reset error:', error);
+                addSystemLog('Reset error: ' + error.message, 'error');
+            }
+        }
+
+        // AI Control Functions
+        function startGestureRecognition() {
+            try {
+                if (!rpiWebSocket || rpiWebSocket.readyState !== WebSocket.OPEN) {
+                    showNotification('Raspberry Pi not connected', 'error');
+                    return;
+                }
+                
+                const button = document.getElementById('gestureBtn');
+                if (!button) return;
+                
+                if (systemState.gestureRecognition) {
+                    systemState.gestureRecognition = false;
+                    button.textContent = '🤖 Start Recognition';
+                    button.className = 'btn btn-success';
+                    updateConnectionStatus('gestureStatus', false);
+                    safeUpdateElement('gestureStatusText', 'Stopped');
+                    showNotification('Gesture recognition stopped', 'info');
+                    addSystemLog('Gesture recognition stopped', 'info');
+                } else {
+                    systemState.gestureRecognition = true;
+                    button.textContent = '⏹️ Stop Recognition';
+                    button.className = 'btn btn-danger';
+                    updateConnectionStatus('gestureStatus', true);
+                    safeUpdateElement('gestureStatusText', 'Active');
+                    showNotification('Gesture recognition started', 'success');
+                    addSystemLog('Gesture recognition started', 'success');
+                }
+            } catch (error) {
+                console.error('Gesture recognition toggle error:', error);
+                addSystemLog('Gesture recognition error: ' + error.message, 'error');
+            }
+        }
+
+        function retrainModel() {
+            try {
+                if (!rpiWebSocket || rpiWebSocket.readyState !== WebSocket.OPEN) {
+                    showNotification('Raspberry Pi not connected', 'error');
+                    return;
+                }
+                
+                if (confirm('Are you sure you want to retrain the AI model? This may take a few minutes.')) {
+                    rpiWebSocket.send(JSON.stringify({ type: 'retrain_model' }));
+                    showNotification('Model retraining started...', 'info');
+                    addSystemLog('AI model retraining initiated', 'info');
+                }
+            } catch (error) {
+                console.error('Retrain error:', error);
+                addSystemLog('Retrain error: ' + error.message, 'error');
+            }
+        }
+
+        function saveDataset() {
+            try {
+                if (!rpiWebSocket || rpiWebSocket.readyState !== WebSocket.OPEN) {
+                    showNotification('Raspberry Pi not connected', 'error');
+                    return;
+                }
+                
+                rpiWebSocket.send(JSON.stringify({ type: 'save_dataset' }));
+                showNotification('Dataset save requested', 'info');
+                addSystemLog('Dataset save requested', 'info');
+            } catch (error) {
+                console.error('Save dataset error:', error);
+                addSystemLog('Save dataset error: ' + error.message, 'error');
+            }
+        }
+
+        function clearDataset() {
+            try {
+                if (!rpiWebSocket || rpiWebSocket.readyState !== WebSocket.OPEN) {
+                    showNotification('Raspberry Pi not connected', 'error');
+                    return;
+                }
+                
+                if (confirm('Are you sure you want to clear all collected data? This cannot be undone.')) {
+                    rpiWebSocket.send(JSON.stringify({ type: 'clear_dataset' }));
+                    showNotification('Dataset cleared', 'warning');
+                    addSystemLog('Dataset cleared', 'warning');
+                }
+            } catch (error) {
+                console.error('Clear dataset error:', error);
+                addSystemLog('Clear dataset error: ' + error.message, 'error');
+            }
+        }
+
+        // TTS Functions
+        function toggleTTS() {
+            try {
+                const toggle = document.getElementById('ttsToggle');
+                if (!toggle) return;
+                
+                systemState.ttsEnabled = toggle.checked;
+                
+                if (rpiWebSocket && rpiWebSocket.readyState === WebSocket.OPEN) {
+                    rpiWebSocket.send(JSON.stringify({ type: 'toggle_tts' }));
+                }
+                
+                showNotification('TTS ' + (systemState.ttsEnabled ? 'enabled' : 'disabled'), 'info');
+                addSystemLog('TTS ' + (systemState.ttsEnabled ? 'enabled' : 'disabled'), 'info');
+            } catch (error) {
+                console.error('TTS toggle error:', error);
+                addSystemLog('TTS toggle error: ' + error.message, 'error');
+            }
+        }
+
+        function testTTS() {
+            try {
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance('SignLink Pro text-to-speech test successful!');
+                    utterance.rate = 0.8;
+                    utterance.pitch = 1;
+                    utterance.volume = 0.8;
+                    speechSynthesis.speak(utterance);
+                    
+                    showNotification('TTS test completed', 'success');
+                    addSystemLog('TTS test completed using Web Speech API', 'info');
+                } else {
+                    showNotification('TTS not supported in this browser', 'error');
+                    addSystemLog('TTS not supported in browser', 'error');
+                }
+            } catch (error) {
+                console.error('TTS test error:', error);
+                addSystemLog('TTS test error: ' + error.message, 'error');
+            }
+        }
+
+        function adjustVolume() {
+            try {
+                const volume = prompt('Enter TTS volume (0-100):', '80');
+                if (volume !== null && !isNaN(volume)) {
+                    const vol = Math.max(0, Math.min(100, parseInt(volume)));
+                    showNotification('TTS volume set to ' + vol + '%', 'success');
+                    addSystemLog('TTS volume adjusted to ' + vol + '%', 'info');
+                }
+            } catch (error) {
+                console.error('Volume adjust error:', error);
+                addSystemLog('Volume adjust error: ' + error.message, 'error');
+            }
+        }
+
+        // Data Logging Functions
+        function startDataLogging() {
+            try {
+                const button = document.getElementById('loggingBtn');
+                if (!button) return;
+                
+                if (systemState.dataLogging) {
+                    systemState.dataLogging = false;
+                    button.textContent = '📊 Start Logging';
+                    button.className = 'btn btn-success';
+                    updateConnectionStatus('dataStatus', false);
+                    safeUpdateElement('dataStatusText', 'Stopped');
+                    showNotification('Data logging stopped', 'info');
+                    addSystemLog('Data logging stopped', 'info');
+                    
+                    if (rpiWebSocket && rpiWebSocket.readyState === WebSocket.OPEN) {
+                        rpiWebSocket.send(JSON.stringify({ type: 'stop_logging' }));
+                    }
+                } else {
+                    systemState.dataLogging = true;
+                    button.textContent = '⏹️ Stop Logging';
+                    button.className = 'btn btn-danger';
+                    updateConnectionStatus('dataStatus', true);
+                    safeUpdateElement('dataStatusText', 'Active');
+                    showNotification('Data logging started', 'success');
+                    addSystemLog('Data logging started', 'success');
+                    
+                    if (rpiWebSocket && rpiWebSocket.readyState === WebSocket.OPEN) {
+                        rpiWebSocket.send(JSON.stringify({ type: 'start_logging' }));
+                    }
+                }
+            } catch (error) {
+                console.error('Data logging toggle error:', error);
+                addSystemLog('Data logging error: ' + error.message, 'error');
+            }
+        }
+
+        function exportData() {
+            try {
+                const csvData = generateCSVData();
+                downloadFile(csvData, 'signlink_data_' + new Date().toISOString().slice(0, 10) + '.csv', 'text/csv');
+                showNotification('CSV data exported', 'success');
+                addSystemLog('CSV data exported', 'info');
+            } catch (error) {
+                console.error('Export CSV error:', error);
+                addSystemLog('Export CSV error: ' + error.message, 'error');
+            }
+        }
+
+        function exportJSON() {
+            try {
+                const jsonData = JSON.stringify({
+                    systemState: systemState,
+                    sensorData: sensorDataBuffer,
+                    exportTime: new Date().toISOString()
+                }, null, 2);
+                
+                downloadFile(jsonData, 'signlink_data_' + new Date().toISOString().slice(0, 10) + '.json', 'application/json');
+                showNotification('JSON data exported', 'success');
+                addSystemLog('JSON data exported', 'info');
+            } catch (error) {
+                console.error('Export JSON error:', error);
+                addSystemLog('Export JSON error: ' + error.message, 'error');
+            }
+        }
+
+        function clearLogs() {
+            try {
+                if (confirm('Are you sure you want to clear all system logs?')) {
+                    const logsPanel = document.getElementById('systemLogs');
+                    if (logsPanel) {
+                        logsPanel.innerHTML = '<div class="log-entry"><span class="log-timestamp">[' + 
+                            new Date().toLocaleTimeString() + ']</span><span class="log-level-info">INFO</span><span>Logs cleared by user</span></div>';
+                    }
+                    showNotification('System logs cleared', 'info');
+                }
+            } catch (error) {
+                console.error('Clear logs error:', error);
+                addSystemLog('Clear logs error: ' + error.message, 'error');
+            }
+        }
+
+        // Test Functions
+        function testESP32() {
+            try {
+                if (!esp32WebSocket || esp32WebSocket.readyState !== WebSocket.OPEN) {
+                    showNotification('ESP32 not connected', 'error');
+                    return;
+                }
+                
+                esp32WebSocket.send('STATUS');
+                showNotification('ESP32 test command sent', 'info');
+                addSystemLog('ESP32 test command sent', 'info');
+            } catch (error) {
+                console.error('ESP32 test error:', error);
+                addSystemLog('ESP32 test error: ' + error.message, 'error');
+            }
+        }
+
+        function testRPi() {
+            try {
+                if (!rpiWebSocket || rpiWebSocket.readyState !== WebSocket.OPEN) {
+                    showNotification('Raspberry Pi not connected', 'error');
+                    return;
+                }
+                
+                rpiWebSocket.send(JSON.stringify({ type: 'get_status' }));
+                showNotification('RPi test command sent', 'info');
+                addSystemLog('RPi test command sent', 'info');
+            } catch (error) {
+                console.error('RPi test error:', error);
+                addSystemLog('RPi test error: ' + error.message, 'error');
+            }
+        }
+
+        // Utility Functions
+        function updateConnectionStatus(elementId, connected) {
+            try {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.className = 'status-indicator ' + (connected ? 'connected' : '');
+                }
+            } catch (error) {
+                console.error('Connection status update error:', error);
+            }
+        }
+
+        function updateSystemTime() {
+            try {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString();
+                safeUpdateElement('systemTime', timeString);
+            } catch (error) {
+                console.error('System time update error:', error);
+            }
+        }
+
+        function loadSavedUrls() {
+            try {
+                const esp32Url = localStorage.getItem('esp32_url');
+                const rpiUrl = localStorage.getItem('rpi_url');
+                
+                if (esp32Url) {
+                    const esp32Input = document.getElementById('esp32Url');
+                    if (esp32Input) esp32Input.value = esp32Url;
+                }
+                
+                if (rpiUrl) {
+                    const rpiInput = document.getElementById('rpiUrl');
+                    if (rpiInput) rpiInput.value = rpiUrl;
+                }
+            } catch (error) {
+                console.error('Load saved URLs error:', error);
+            }
+        }
+
+        function showNotification(message, type) {
+            try {
+                const notification = document.createElement('div');
+                notification.className = 'notification ' + type;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 4000);
+            } catch (error) {
+                console.error('Notification error:', error);
+            }
+        }
+
+        // Log throttling to prevent spam
+        let logQueue = [];
+        let logTimeout = null;
+        
+        function addSystemLog(message, level) {
+            // Skip frequent sensor data logs to reduce overhead
+            if (message.includes('Sensor data received') || message.includes('received from')) {
+                return;
+            }
+            
+            try {
+                const logsPanel = document.getElementById('systemLogs');
+                if (!logsPanel) return;
+                
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.innerHTML = `
+                    <span class="log-timestamp">[${timestamp}]</span>
+                    <span class="log-level-${level}">${level.toUpperCase()}</span>
+                    <span>${message}</span>
+                `;
+                
+                logsPanel.appendChild(logEntry);
+                
+                // Auto-scroll if enabled (throttled)
+                if (!logTimeout) {
+                    logTimeout = setTimeout(() => {
+                        const autoScroll = document.getElementById('autoScrollToggle');
+                        if (autoScroll && autoScroll.checked) {
+                            logsPanel.scrollTop = logsPanel.scrollHeight;
+                        }
+                        logTimeout = null;
+                    }, 200);
+                }
+                
+                // Keep only last 50 log entries for better performance
+                while (logsPanel.children.length > 50) {
+                    logsPanel.removeChild(logsPanel.firstChild);
+                }
+            } catch (error) {
+                console.error('Add system log error:', error);
+            }
+        }
+
+        function generateCSVData() {
+            try {
+                let csv = 'Timestamp,Flex1,Flex2,Flex3,Flex4,AccelX,AccelY,AccelZ,GyroX,GyroY,GyroZ\n';
+                
+                const maxLength = Math.min(
+                    sensorDataBuffer.flex.labels.length,
+                    sensorDataBuffer.imu.labels.length
+                );
+                
+                for (let i = 0; i < maxLength; i++) {
+                    csv += `${sensorDataBuffer.flex.labels[i]},`;
+                    csv += `${sensorDataBuffer.flex.data1[i] || 0},`;
+                    csv += `${sensorDataBuffer.flex.data2[i] || 0},`;
+                    csv += `${sensorDataBuffer.flex.data3[i] || 0},`;
+                    csv += `${sensorDataBuffer.flex.data4[i] || 0},`;
+                    csv += `${sensorDataBuffer.imu.accelX[i] || 0},`;
+                    csv += `${sensorDataBuffer.imu.accelY[i] || 0},`;
+                    csv += `${sensorDataBuffer.imu.accelZ[i] || 0},`;
+                    csv += `${sensorDataBuffer.imu.gyroX[i] || 0},`;
+                    csv += `${sensorDataBuffer.imu.gyroY[i] || 0},`;
+                    csv += `${sensorDataBuffer.imu.gyroZ[i] || 0}\n`;
+                }
+                
+                return csv;
+            } catch (error) {
+                console.error('Generate CSV error:', error);
+                return 'Error generating CSV data';
+            }
+        }
+
+        function downloadFile(content, filename, contentType) {
+            try {
+                const blob = new Blob([content], { type: contentType });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Download file error:', error);
+            }
+        }
+
+        function clearSystemLogs() {
+            clearLogs();
+        }
+
+        function exportLogs() {
+            try {
+                const logsPanel = document.getElementById('systemLogs');
+                if (!logsPanel) return;
+                
+                let logText = 'SignLink Pro System Logs\n';
+                logText += 'Generated: ' + new Date().toISOString() + '\n\n';
+                
+                const logEntries = logsPanel.querySelectorAll('.log-entry');
+                logEntries.forEach(entry => {
+                    logText += entry.textContent + '\n';
+                });
+                
+                downloadFile(logText, 'signlink_logs_' + new Date().toISOString().slice(0, 10) + '.txt', 'text/plain');
+                showNotification('System logs exported', 'success');
+                addSystemLog('System logs exported', 'info');
+            } catch (error) {
+                console.error('Export logs error:', error);
+                addSystemLog('Export logs error: ' + error.message, 'error');
+            }
+        }
+
+        function updateSystemStatus(data) {
+            try {
+                if (data.gesture_recognition) {
+                    safeUpdateElement('totalPredictions', data.gesture_recognition.total_predictions || 0);
+                    safeUpdateElement('accuracyRate', (data.gesture_recognition.accuracy_rate || 0) + '%');
+                    safeUpdateElement('modelStatus', data.gesture_recognition.model_loaded ? 'Loaded' : 'Not Loaded');
+                }
+                
+                if (data.tts) {
+                    systemState.ttsEnabled = data.tts.enabled;
+                    const ttsToggle = document.getElementById('ttsToggle');
+                    if (ttsToggle) ttsToggle.checked = systemState.ttsEnabled;
+                }
+                
+                if (data.system) {
+                    systemState.dataLogging = data.system.data_logging;
+                    updateConnectionStatus('dataStatus', systemState.dataLogging);
+                    safeUpdateElement('dataStatusText', systemState.dataLogging ? 'Active' : 'Stopped');
+                }
+            } catch (error) {
+                console.error('System status update error:', error);
+                addSystemLog('System status update error: ' + error.message, 'error');
+            }
+        }
+
+        function handleCommandResponse(data) {
+            try {
+                if (data.success) {
+                    showNotification(data.message || 'Command executed successfully', 'success');
+                    addSystemLog('Command response: ' + (data.message || 'Success'), 'success');
+                } else {
+                    showNotification(data.message || 'Command failed', 'error');
+                    addSystemLog('Command error: ' + (data.message || 'Failed'), 'error');
+                }
+            } catch (error) {
+                console.error('Command response error:', error);
+                addSystemLog('Command response error: ' + error.message, 'error');
+            }
+        }
+
+        // Copy code functions for the code panels
+        function copyCode(type) {
+            try {
+                let codeElement;
+                if (type === 'arduino') {
+                    codeElement = document.getElementById('arduinoCode');
+                } else if (type === 'python') {
+                    codeElement = document.getElementById('pythonCode');
+                }
+                
+                if (codeElement) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = codeElement.textContent;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    showNotification('Code copied to clipboard!', 'success');
+                    addSystemLog('Code copied: ' + type, 'info');
+                }
+            } catch (error) {
+                console.error('Copy code error:', error);
+                showNotification('Failed to copy code', 'error');
+                addSystemLog('Copy code error: ' + error.message, 'error');
+            }
+        }
+
+        function downloadCode(type) {
+            try {
+                let codeElement, filename, contentType;
+                
+                if (type === 'arduino') {
+                    codeElement = document.getElementById('arduinoCode');
+                    filename = 'signlink_pro_esp32.ino';
+                    contentType = 'text/plain';
+                } else if (type === 'python') {
+                    codeElement = document.getElementById('pythonCode');
+                    filename = 'signlink_pro_server.py';
+                    contentType = 'text/x-python';
+                }
+                
+                if (codeElement) {
+                    const codeContent = codeElement.textContent;
+                    downloadFile(codeContent, filename, contentType);
+                    showNotification('Code file downloaded!', 'success');
+                    addSystemLog('Code downloaded: ' + filename, 'info');
+                }
+            } catch (error) {
+                console.error('Download code error:', error);
+                showNotification('Failed to download code', 'error');
+                addSystemLog('Download code error: ' + error.message, 'error');
+            }
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'970b7857063ec6ee',t:'MTc1NTQ1NzgxMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
